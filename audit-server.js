@@ -6,8 +6,8 @@ const fs = require("fs");
 const path = require("path");
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const PAGESPEED_API_KEY = process.env.PAGESPEED_API_KEY;
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+const PAGESPEED_API_KEY = process.env.PAGESPEED_KEY;
+const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY;
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 const PORT = process.env.PORT || 3000;
 const TEMPLATE_PATH = path.join(__dirname, "audit-template.html");

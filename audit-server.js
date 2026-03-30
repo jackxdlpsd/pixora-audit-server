@@ -261,10 +261,17 @@ function buildHTML(businessName, websiteUrl, scores, analysis) {
 async function deployToNetlify(html, businessName) {
   log("Deploying to Netlify...");
 
+  const JSZip = require("jszip");
+
   const slug = businessName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+
+  // Build zip in memory
+  const zip = new JSZip();
+  zip.file("index.html", html);
+  const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 
   // Create site
   let site;
@@ -275,7 +282,6 @@ async function deployToNetlify(html, businessName) {
       { Authorization: `Bearer ${NETLIFY_TOKEN}` }
     );
   } catch (err) {
-    // If name taken, try without timestamp
     site = await httpsPost(
       "https://api.netlify.com/api/v1/sites",
       {},
@@ -287,30 +293,16 @@ async function deployToNetlify(html, businessName) {
   const siteUrl = site.ssl_url || site.url;
   log(`Site created: ${siteUrl}`);
 
-  // Deploy via file digest
-  const crypto = require("crypto");
-  const fileHash = crypto.createHash("sha1").update(html).digest("hex");
-
-  const deploy = await httpsPost(
-    `https://api.netlify.com/api/v1/sites/${siteId}/deploys`,
-    {
-      files: { "/index.html": fileHash },
-    },
-    { Authorization: `Bearer ${NETLIFY_TOKEN}` }
-  );
-
-  const deployId = deploy.id;
-
-  // Upload the file
-  const uploadUrl = `https://api.netlify.com/api/v1/deploys/${deployId}/files/index.html`;
+  // Deploy zip
   await new Promise((resolve, reject) => {
     const req = https.request(
-      uploadUrl,
+      `https://api.netlify.com/api/v1/sites/${siteId}/deploys`,
       {
-        method: "PUT",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${NETLIFY_TOKEN}`,
-          "Content-Type": "application/octet-stream",
+          "Content-Type": "application/zip",
+          "Content-Length": zipBuffer.length,
         },
       },
       (res) => {
@@ -318,12 +310,12 @@ async function deployToNetlify(html, businessName) {
         res.on("data", (chunk) => (data += chunk));
         res.on("end", () => {
           if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
-          else reject(new Error(`Upload failed: ${res.statusCode} ${data.slice(0, 300)}`));
+          else reject(new Error(`Deploy failed: ${res.statusCode} ${data.slice(0, 300)}`));
         });
       }
     );
     req.on("error", reject);
-    req.write(html);
+    req.write(zipBuffer);
     req.end();
   });
 

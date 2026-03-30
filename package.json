@@ -1,0 +1,7 @@
+{
+  "name": "pixora-audit-server",
+  "version": "1.0.0",
+  "main": "audit-server.js",
+  "scripts": { "start": "node audit-server.js" },
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Audit Report - {{BUSINESS_NAME}} | Pixora</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #1f1f35;
+            --border: #2a2a40;
+            --text-primary: #f0f0f5;
+            --text-secondary: #9090a8;
+            --text-muted: #6060780;
+            --accent: #6c5ce7;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --success: #00d68f;
+            --warning: #ffaa00;
+            --danger: #ff4757;
+            --gradient-1: linear-gradient(135deg, #6c5ce7, #a855f7);
+            --gradient-2: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .bg-pattern {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(108, 92, 231, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(108, 92, 231, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            padding: 48px 0 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header .logo {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .header .audit-meta {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        .header .audit-meta a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Overall Score Section */
+        .overall-section {
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        .overall-score-ring {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 32px;
+        }
+
+        .overall-score-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .overall-score-ring .score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -2px;
+        }
+
+        .overall-score-ring .score-label {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+        }
+
+        .overall-verdict {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .overall-sub {
+            color: var(--text-secondary);
+            font-size: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Score Cards Grid */
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 0 0 60px;
+        }
+
+        .score-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .score-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .score-card .card-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .score-card .card-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .score-card .card-score {
+            font-size: 44px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .score-card .card-verdict {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .score-good { color: var(--success); }
+        .score-ok { color: var(--warning); }
+        .score-bad { color: var(--danger); }
+
+        /* Issues Section */
+        .section {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .section-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .section-header .badge {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--danger);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .issue-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            transition: all 0.2s ease;
+        }
+
+        .issue-card:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+        }
+
+        .issue-severity {
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 8px;
+        }
+
+        .severity-critical { background: var(--danger); box-shadow: 0 0 8px rgba(255, 71, 87, 0.5); }
+        .severity-warning { background: var(--warning); box-shadow: 0 0 8px rgba(255, 170, 0, 0.5); }
+        .severity-info { background: #4ecdc4; box-shadow: 0 0 8px rgba(78, 205, 196, 0.5); }
+
+        .issue-content h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .issue-content p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .issue-tag {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(108, 92, 231, 0.15);
+            color: var(--accent);
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        /* Revenue Loss */
+        .revenue-section {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.08), rgba(255, 71, 87, 0.02));
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .revenue-section .revenue-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--danger);
+            margin-bottom: 12px;
+        }
+
+        .revenue-section .revenue-amount {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--danger);
+            margin-bottom: 8px;
+        }
+
+        .revenue-section .revenue-sub {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Before/After */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .comparison-col h3 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid;
+        }
+
+        .comparison-col.before h3 {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .comparison-col.after h3 {
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .comparison-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-item .icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 80px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .cta-section h2 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 32px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: var(--gradient-1);
+            color: white;
+            padding: 16px 48px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 24px var(--accent-glow);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px var(--accent-glow);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .scores-grid { grid-template-columns: repeat(2, 1fr); }
+            .comparison-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 28px; }
+            .overall-score-ring { width: 160px; height: 160px; }
+            .overall-score-ring .score-value { font-size: 42px; }
+        }
+
+        @media (max-width: 480px) {
+            .scores-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">Pixora Digital</div>
+            <h1>Website Audit Report</h1>
+            <p class="subtitle">Comprehensive analysis for <strong>{{BUSINESS_NAME}}</strong></p>
+            <p class="audit-meta">
+                <a href="https://{{WEBSITE_URL}}" target="_blank">{{WEBSITE_URL}}</a> &middot; Generated on {{AUDIT_DATE}}
+            </p>
+        </header>
+
+        <!-- Overall Score -->
+        <section class="overall-section">
+            <div class="overall-score-ring">
+                <svg width="200" height="200" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="#2a2a40" stroke-width="10"/>
+                    <circle cx="100" cy="100" r="85" fill="none"
+                        stroke="url(#scoreGradient)" stroke-width="10"
+                        stroke-linecap="round"
+                        stroke-dasharray="534"
+                        stroke-dashoffset="{{SCORE_OFFSET}}"
+                    />
+                    <defs>
+                        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#6c5ce7"/>
+                            <stop offset="100%" stop-color="#a855f7"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="score-value">{{OVERALL_SCORE}}</div>
+            </div>
+            <p class="overall-verdict">Your website needs attention</p>
+            <p class="overall-sub">We analyzed performance, SEO, mobile experience, and accessibility to give you a complete picture of where you stand.</p>
+        </section>
+
+        <!-- Score Cards -->
+        <div class="scores-grid">
+            <div class="score-card">
+                <div class="card-icon">&#9889;</div>
+                <div class="card-title">Performance</div>
+                <div class="card-score {{PERFORMANCE_CLASS}}">{{PERFORMANCE_SCORE}}</div>
+                <div class="card-verdict">{{PERFORMANCE_VERDICT}}</div>
+            </div>
+            <div class="score-card">
+                <div class="card-icon">&#128270;</div>
+                <div class="card-title">SEO</div>
+                <div class="card-score {{SEO_CLASS}}">{{SEO_SCORE}}</div>
+                <div class="card-verdict">{{SEO_VERDICT}}</div>
+            </div>
+            <div class="score-card">
+                <div class="card-icon">&#128241;</div>
+                <div class="card-title">Mobile</div>
+                <div class="card-score {{MOBILE_CLASS}}">{{MOBILE_SCORE}}</div>
+                <div class="card-verdict">{{MOBILE_VERDICT}}</div>
+            </div>
+            <div class="score-card">
+                <div class="card-icon">&#9855;</div>
+                <div class="card-title">Accessibility</div>
+                <div class="card-score {{ACCESSIBILITY_CLASS}}">{{ACCESSIBILITY_SCORE}}</div>
+                <div class="card-verdict">{{ACCESSIBILITY_VERDICT}}</div>
+            </div>
+        </div>
+
+        <!-- Issues -->
+        <section class="section">
+            <div class="section-header">
+                <h2>Issues Found</h2>
+                <span class="badge">Needs Fix</span>
+            </div>
+            {{ISSUES_HTML}}
+        </section>
+
+        <!-- Revenue Loss -->
+        <div class="revenue-section">
+            <div class="revenue-label">Estimated Monthly Revenue Loss</div>
+            <div class="revenue-amount">{{REVENUE_LOSS}}</div>
+            <div class="revenue-sub">Based on industry benchmarks for lost conversions due to site issues</div>
+        </div>
+
+        <!-- Before / After -->
+        <section class="section">
+            <div class="section-header">
+                <h2>What We'll Fix</h2>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-col before">
+                    <h3>&#10060; Current State</h3>
+                    {{BEFORE_ITEMS}}
+                </div>
+                <div class="comparison-col after">
+                    <h3>&#10004; After Pixora</h3>
+                    {{AFTER_ITEMS}}
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section">
+            <h2>Ready to Fix Your Website?</h2>
+            <p>Let's transform your online presence and stop losing customers to a poor website experience.</p>
+            <a href="https://pixora.digital" class="cta-button">Get Your Free Consultation</a>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 Pixora Digital. All rights reserved.</p>
+            <p style="margin-top: 8px;">
+                <a href="https://pixora.digital">pixora.digital</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -359,9 +359,13 @@ async function runAudit(businessName, websiteUrl, industry) {
     if (err.message.includes("401") || err.message.includes("403")) {
       console.error("  -> Check your API keys (PageSpeed / Claude / Netlify)");
     }
-    process.exit(1);
+    throw err;
   }
 }
+
+// ─── IN-MEMORY RESULT STORE ────────────────────────────────────────────────────
+
+const auditResults = new Map();
 
 // ─── HTTP SERVER MODE ──────────────────────────────────────────────────────────
 
@@ -369,7 +373,7 @@ function startServer() {
   const server = http.createServer(async (req, res) => {
     // CORS headers
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
     if (req.method === "OPTIONS") {
@@ -377,35 +381,74 @@ function startServer() {
       return res.end();
     }
 
+    // GET /health
+    if (req.method === "GET" && req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ status: "running", service: "Pixora Audit Machine" }));
+    }
+
+    // GET /result/:businessName
+    const resultMatch = req.url.match(/^\/result\/(.+)$/);
+    if (req.method === "GET" && resultMatch) {
+      const key = decodeURIComponent(resultMatch[1]);
+      const result = auditResults.get(key);
+      if (!result) {
+        res.writeHead(202, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ status: "processing" }));
+      }
+      if (result.error) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ status: "error", error: result.error }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ status: "ready", url: result.url }));
+    }
+
+    // POST /audit
     if (req.method === "POST" && req.url === "/audit") {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
-      req.on("end", async () => {
+      req.on("end", () => {
+        let businessName, websiteUrl, industry;
         try {
-          const { businessName, websiteUrl, industry } = JSON.parse(body);
-          if (!businessName || !websiteUrl) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            return res.end(JSON.stringify({ error: "businessName and websiteUrl are required" }));
-          }
-
-          const url = await runAudit(businessName, websiteUrl, industry || "business");
-
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true, url }));
-        } catch (err) {
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: err.message }));
+          ({ businessName, websiteUrl, industry } = JSON.parse(body));
+        } catch {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "Invalid JSON body" }));
         }
+
+        if (!businessName || !websiteUrl) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "businessName and websiteUrl are required" }));
+        }
+
+        // Respond immediately
+        auditResults.delete(businessName);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "processing", message: "Audit started" }));
+
+        // Run audit in background
+        setImmediate(async () => {
+          try {
+            const url = await runAudit(businessName, websiteUrl, industry || "business");
+            auditResults.set(businessName, { url });
+          } catch (err) {
+            auditResults.set(businessName, { error: err.message });
+          }
+        });
       });
-    } else {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "POST /audit only" }));
+      return;
     }
+
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
   });
 
   server.listen(PORT, () => {
     console.log(`\n  Pixora Audit Server running on http://localhost:${PORT}`);
-    console.log(`  POST /audit { businessName, websiteUrl, industry }\n`);
+    console.log(`  POST /audit { businessName, websiteUrl, industry }`);
+    console.log(`  GET  /result/:businessName`);
+    console.log(`  GET  /health\n`);
   });
 }
 
